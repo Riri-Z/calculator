@@ -9,10 +9,8 @@
 		if (typeof value === 'number' || value === '.') return handleValue(value);
 		if (value === 'AC') return handleClean;
 		if (value === 'DEL') return handleDel;
-		if (isOperators(value)) {
-			return handleOperator(value);
-		}
-		if (value === '=') return handleResult(value);
+		if (isOperators(value)) return handleOperator(value);
+		if (value === '=') return handleResult();
 	}
 
 	const operations = {
@@ -22,13 +20,13 @@
 		'/': (a, b) => a / b
 	};
 
-	function handleResult(value) {
+	function handleResult() {
 		let storeCopy = get(store);
-		storeCopy.currentOperand = operations[storeCopy.operation](
+		let result = operations[storeCopy.operation](
 			Number(storeCopy.previousOperand),
 			Number(storeCopy.currentOperand)
 		);
-		storeCopy.result.push(value, storeCopy.currentOperand);
+		storeCopy.result = [result];
 		return store.set(storeCopy);
 	}
 
@@ -49,36 +47,43 @@
 		store.set({
 			currentOperand: 0,
 			previousOperand: 0,
-			result: [],
+			result: [0],
 			operation: null
 		});
 	}
 
 	function handleDel() {
 		let storeCopy = get(store);
-		storeCopy.currentOperand = get(store).currentOperand.toString().slice(0, -1);
-		storeCopy.result[storeCopy.result - 1] = storeCopy.currentOperand;
+		if (storeCopy.currentOperand === 0) {
+			return;
+		}
+		if (get(store).result.length == 1) {
+			storeCopy.currentOperand = 0;
+			storeCopy.result[0] = storeCopy.currentOperand;
+		} else {
+			storeCopy.currentOperand = get(store).currentOperand.toString().slice(0, -1);
+			storeCopy.result[storeCopy.result - 1] = storeCopy.currentOperand;
+		}
 		return store.set(storeCopy);
 	}
 
 	function removeZeros(number) {
 		let numbers = number;
-
 		const regex = new RegExp('^0+(?!$)', 'g');
 		let cleanedNumbers = numbers.replaceAll(regex, '');
 
-		return cleanedNumbers;
+		return +cleanedNumbers;
 	}
 
 	function handleValue(value) {
 		let storeCopy = get(store);
-
+		let lastItem = storeCopy.result[storeCopy.result.length - 1];
 		let newResult = storeCopy.currentOperand.toString() + value.toString();
-
 		storeCopy.currentOperand = removeZeros(newResult);
-
-		storeCopy.result.push(storeCopy.currentOperand);
-
+		if (typeof lastItem === 'number') {
+			storeCopy.result[storeCopy.result.length - 1] = storeCopy.currentOperand;
+		} else {
+			storeCopy.result.push(storeCopy.currentOperand);		}
 		return store.set(storeCopy);
 	}
 </script>

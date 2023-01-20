@@ -1,7 +1,6 @@
 <script>
 	import store from '../stores';
 
-	console.log('store', $store);
 </script>
 
 {#if $store.operation == null}
