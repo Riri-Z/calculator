@@ -4,7 +4,7 @@ const store = writable({
 	currentOperand: 0,
   previousOperand: 0,
 	result: [0],
-	operation: null
+	operation: ''
 });
 
 export default store;
