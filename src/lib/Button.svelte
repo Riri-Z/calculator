@@ -1,7 +1,7 @@
 <script lang="ts">
 	export let value: string | number;
 	export let doubleSize = false;
-	export let numberBtn: boolean;
+	export let numberBtn: boolean = false;
 	let operators = ['-', '+', '/', '*'];
 	import store from '../stores';
 	import { get } from 'svelte/store';
@@ -14,7 +14,7 @@
 		if (value === '=') return handleResult();
 	}
 
-	const operations:any =  {
+	const operations: any = {
 		'+': (a: number, b: number) => a + b,
 		'-': (a: number, b: number) => a - b,
 		'*': (a: number, b: number) => a * b,
@@ -22,18 +22,39 @@
 	};
 
 	function handleResult() {
-		let storeCopy = get(store); /*
-		let operation = storeCopy.operation?? '' */
+		let storeCopy = get(store);
+
+		if (storeCopy.result.length === 1) {
+			return;
+		}
+
 		let result = operations[storeCopy.operation](
 			Number(storeCopy.previousOperand),
 			Number(storeCopy.currentOperand)
 		);
 		storeCopy.result = [result];
-		return store.set(storeCopy);
+		return store.set({
+			currentOperand: result,
+			previousOperand: 0,
+			result: [result],
+			operation: ''
+		});
 	}
 
-	function handleOperator(operator:string) {
+	function handleOperator(operator: string) {
 		let storeCopy = get(store);
+		//Replace previous operator
+		if (typeof get(store).result[get(store).result.length - 1] !== 'number') {
+			storeCopy.result[get(store).result.length - 1] = operator;
+			return store.set(storeCopy);
+		}
+
+		//compute previous calcul
+		if (get(store).result.length > 2) {
+			let firstOperation = storeCopy.result.splice(0, 3);
+			let firstOperationValue = operations[firstOperation[1]](firstOperation[0], firstOperation[2]);
+			storeCopy.result.unshift(firstOperationValue);
+		}
 		storeCopy.previousOperand = storeCopy.currentOperand;
 		storeCopy.operation = operator;
 		storeCopy.currentOperand = 0;
@@ -46,7 +67,7 @@
 	}
 
 	function handleClean() {
-		store.set({
+		return store.set({
 			currentOperand: 0,
 			previousOperand: 0,
 			result: [0],
@@ -59,13 +80,11 @@
 		if (storeCopy.currentOperand === 0) {
 			return;
 		}
-		if (get(store).result.length == 1) {
-			storeCopy.currentOperand = 0;
-			storeCopy.result[0] = storeCopy.currentOperand;
-		} else {
-			storeCopy.currentOperand = get(store).currentOperand.toString().slice(0, -1);
-			storeCopy.result[storeCopy.result - 1] = storeCopy.currentOperand;
-		}
+
+		let newCurrentOperand = Number(storeCopy.currentOperand.toString().slice(0, -1));
+		storeCopy.currentOperand = newCurrentOperand;
+		storeCopy.result[storeCopy.result.length - 1] = newCurrentOperand;
+
 		return store.set(storeCopy);
 	}
 
@@ -82,7 +101,7 @@
 		let lastItem = storeCopy.result[storeCopy.result.length - 1];
 		let newResult = storeCopy.currentOperand.toString() + value.toString();
 		storeCopy.currentOperand = removeZeros(newResult);
-		if (typeof lastItem === 'number' /* ||( value = '.') */) {
+		if (typeof lastItem === 'number') {
 			storeCopy.result[storeCopy.result.length - 1] = storeCopy.currentOperand;
 		} else {
 			storeCopy.result.push(storeCopy.currentOperand);
